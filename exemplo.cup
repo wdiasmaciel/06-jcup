@@ -1,6 +1,12 @@
 import java_cup.runtime.*;
 
-/* O próprio analisador sintático será responsável por iniciar 
+/* 
+=> parser code {: ... :}:
+   Permite incluir um método main() diretamente dentro da 
+   classe do analisador sintático, dispensando a criação de 
+   uma classe principal (Main) com o método main().
+
+   O próprio analisador sintático será responsável por iniciar 
    a execução.
 */
 parser code {:

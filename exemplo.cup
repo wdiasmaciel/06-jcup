@@ -32,7 +32,7 @@ inicio ::= expr:e PTVIRG {: System.out.println(e); :}
 
 expr ::= expr:a MAIS expr:b             {: RESULT = a.intValue() + b.intValue(); :}
        | expr:a MENOS expr:b            {: RESULT = a.intValue() - b.intValue(); :}
-       | MENOS expr:a %prec MENOSUNARIO {: RESULT = -a; :}       
+       | MENOS expr:a                   {: RESULT = -a; :} %prec MENOSUNARIO       
        | PARENTESQ expr:a PARENTDIR     {: RESULT = a.intValue(); :}
        | INTEIRO:a                      {: RESULT = a.intValue(); :}
        ;

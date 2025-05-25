@@ -16,7 +16,6 @@ parser code {:
   }
 :}
 
-
 terminal Integer INTEIRO;
 terminal MAIS, MENOS, MENOSUNARIO, PTVIRG, PARENTESQ, PARENTDIR;
 
@@ -31,18 +30,19 @@ start with inicio;
 inicio ::= expr:e PTVIRG {: System.out.println(e); :}
          ;
 
-expr ::= expr:a MAIS expr:b         {: RESULT = a.intValue() + b.intValue(); :}
-       | expr:a MENOS expr:b        {: RESULT = a.intValue() - b.intValue(); :}
-       | MENOS expr:a               {: RESULT = -a; :} %prec MENOSUNARIO       
-       | PARENTESQ expr:a PARENTDIR {: RESULT = a.intValue(); :}
-       | INTEIRO:a                  {: RESULT = a.intValue(); :}
+expr ::= expr:a MAIS expr:b             {: RESULT = a.intValue() + b.intValue(); :}
+       | expr:a MENOS expr:b            {: RESULT = a.intValue() - b.intValue(); :}
+       | MENOS expr:a %prec MENOSUNARIO {: RESULT = -a; :}       
+       | PARENTESQ expr:a PARENTDIR     {: RESULT = a.intValue(); :}
+       | INTEIRO:a                      {: RESULT = a.intValue(); :}
        ;
 
 /*
 Usar %prec:
-É importante quando um mesmo token tem dois significados diferentes (como o - unário e binário).
-Evita conflitos de precedência.
-Garante a construção correta da árvore sintática e a avaliação da expressão.
+  É importante quando um mesmo token tem dois significados 
+  diferentes (como o - unário e binário).
+  Evita conflitos de precedência.
+  Garante a construção correta da árvore sintática e a avaliação da expressão.
 
 => Usar %prec MENOSUNARIO para informar:
    "Essa regra tem a precedência do token MENOSUNARIO, 

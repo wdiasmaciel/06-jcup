@@ -53,6 +53,22 @@ inteiro = {digito}+
 ```java
 import java_cup.runtime.*;
 
+/* 
+=> parser code {: ... :}:
+   Permite incluir um método main() diretamente dentro da 
+   classe do analisador sintático, dispensando a criação de 
+   uma classe principal (Main) com o método main().
+
+   O próprio analisador sintático será responsável por iniciar 
+   a execução.
+*/
+parser code {:
+  public static void main(String[] args) throws Exception {
+    Compilador compilador = new Compilador();
+    compilador.compilar();
+  }
+:}
+
 terminal Integer INTEIRO;
 terminal MAIS, MENOS, MENOSUNARIO, PTVIRG, PARENTESQ, PARENTDIR;
 
@@ -67,18 +83,19 @@ start with inicio;
 inicio ::= expr:e PTVIRG {: System.out.println(e); :}
          ;
 
-expr ::= expr:a MAIS expr:b         {: RESULT = a.intValue() + b.intValue(); :}
-       | expr:a MENOS expr:b        {: RESULT = a.intValue() - b.intValue(); :}
-       | MENOS expr:a               {: RESULT = -a; :} %prec MENOSUNARIO       
-       | PARENTESQ expr:a PARENTDIR {: RESULT = a.intValue(); :}
-       | INTEIRO:a                  {: RESULT = a.intValue(); :}
+expr ::= expr:a MAIS expr:b             {: RESULT = a.intValue() + b.intValue(); :}
+       | expr:a MENOS expr:b            {: RESULT = a.intValue() - b.intValue(); :}
+       | MENOS expr:a %prec MENOSUNARIO {: RESULT = -a; :}       
+       | PARENTESQ expr:a PARENTDIR     {: RESULT = a.intValue(); :}
+       | INTEIRO:a                      {: RESULT = a.intValue(); :}
        ;
 
 /*
 Usar %prec:
-É importante quando um mesmo token tem dois significados diferentes (como o - unário e binário).
-Evita conflitos de precedência.
-Garante a construção correta da árvore sintática e a avaliação da expressão.
+  É importante quando um mesmo token tem dois significados 
+  diferentes (como o - unário e binário).
+  Evita conflitos de precedência.
+  Garante a construção correta da árvore sintática e a avaliação da expressão.
 
 => Usar %prec MENOSUNARIO para informar:
    "Essa regra tem a precedência do token MENOSUNARIO, 
@@ -86,15 +103,15 @@ Garante a construção correta da árvore sintática e a avaliação da express�
 */
 ```
 
-5. Criar o arquivo `Main.java`:
-- `touch Main.java`
+5. Criar o arquivo `Compilador.java`:
+- `touch Compilador.java`
 
-6. Informar o conteúdo do arquivo `Main.java`:
+6. Informar o conteúdo do arquivo `Compilador.java`:
 ```java
 import java.io.*;
 
-public class Main {
-  public static void main(String[] args) throws Exception {
+public class Compilador {
+  public void compilar() throws Exception {
     BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
     System.out.println("Digite expressões (termine com ';') e pressione ENTER. Ctrl+C para sair.");
 
@@ -137,3 +154,4 @@ public class Main {
   - 7);
   ```
   (é necessário terminar com ";")
+  

@@ -1,135 +1,139 @@
-# 02-jcup
+# 06-jcup
 
-# Analisador Léxico e Sintático com JFlex e JCup
-
-Este projeto demonstra como usar `JFlex` e `JCup` juntos para analisar expressões simples como `1 + 2 + 3`.
-
-## Como usar no GitHub Codespaces
-
-1. Clonar o repositório.
-
-<strong>Ou</strong>
-
-1. Baixar o `JFlex`:
-- `wget https://repo1.maven.org/maven2/de/jflex/jflex/1.8.2/jflex-1.8.2.jar -O jflex.jar`
-
-2. Baixa o `JCup`:
-- `wget https://repo1.maven.org/maven2/com/github/vbmacher/java-cup/11b-20160615/java-cup-11b-20160615.jar -O jcup.jar`
-
-3. Criar o arquivo `exemplo.flex`:
+1. Criar o arquivo `exemplo.flex`:
 - `touch exemplo.flex`
 
-4. Informar o conteúdo do arquivo `exemplo.flex`:
+2. Informar o conteúdo do arquivo `exemplo.flex`:
 ```java
+/* Definição: seção para código do usuário. */
 
-package src;
 import java_cup.runtime.Symbol;
 
 %%
 
-%public
+/* Opções e Declarações: seção para diretivas e macros. */
+
+// Diretivas:
+%cup
 %unicode
 %line
 %column
-%cup
 %class MeuScanner
 
-PLUS = \+
-NUM  = [0-9]+
+// Macros:
+digito = [0-9]
+inteiro = {digito}+
 
 %%
 
-{NUM}     { return new Symbol(sym.NUM, Integer.parseInt(yytext())); }
-{PLUS}    { return new Symbol(sym.PLUS); }
-\n        { /* ignora nova linha */ }
-[ \t\r]+  { /* ignora espaços */ }
-.         { System.err.println("Caractere inválido: " + yytext()); return null; }
+/* Regras e Ações Associadas: seção de instruções para o analisador léxico. */
 
+{inteiro} {
+            Integer numero = Integer.valueOf(yytext());
+            return new Symbol(sym.INTEIRO, yyline, yycolumn, numero);
+          }
+"+"       { return new Symbol(sym.MAIS); }
+"-"       { return new Symbol(sym.MENOS); }
+"("       { return new Symbol(sym.PARENTESQ); }
+")"       { return new Symbol(sym.PARENTDIR); }
+";"       { return new Symbol(sym.PTVIRG); }
+\n        { /* Ignora nova linha. */ }
+[ \t\r]+  { /* Ignora espaços. */ }
+.         { System.err.println("\n Caractere inválido: " + yytext() +
+                               "\n Linha: " + yyline +
+                               "\n Coluna: " + yycolumn + "\n"); 
+            return null; 
+          }
 ```
 
-5. Criar o arquivo `exemplo.cup`:
+3. Criar o arquivo `exemplo.cup`:
 - `touch exemplo.cup`
 
-6. Informar o conteúdo do arquivo `exemplo.cup`:
+4. Informar o conteúdo do arquivo `exemplo.cup`:
 ```java
-
-import java.io.InputStreamReader;
 import java_cup.runtime.*;
 
-parser code {:  
-    public static void main(String[] args) throws Exception {
-        MeuScanner meuScanner = new MeuScanner(new InputStreamReader(System.in));
-        Parser parser = new Parser(meuScanner);
-        parser.parse();
-    }
-:};
+terminal Integer INTEIRO;
+terminal MAIS, MENOS, MENOSUNARIO, PTVIRG, PARENTESQ, PARENTDIR;
 
-terminal PLUS, NUM;
-non terminal expr;
+non terminal inicio;
+non terminal Integer expr;
 
-start with expr;
+precedence left MAIS, MENOS;
+precedence right MENOSUNARIO; // Menos unário com maior precedência, associatividade à direita.
 
-expr ::= expr PLUS NUM 
-    {: RESULT = ((Integer) $1) + ((Integer) $3);
-       System.out.println("Soma atual: " + RESULT); 
-    :}
-       | NUM 
-    {: RESULT = (Integer) $1;
-       System.out.println("Número inicial: " + RESULT); 
-    :} ;
+start with inicio;
 
+inicio ::= expr:e PTVIRG {: System.out.println(e); :}
+         ;
+
+expr ::= expr:a MAIS expr:b         {: RESULT = a.intValue() + b.intValue(); :}
+       | expr:a MENOS expr:b        {: RESULT = a.intValue() - b.intValue(); :}
+       | MENOS expr:a               {: RESULT = -a; :} %prec MENOSUNARIO       
+       | PARENTESQ expr:a PARENTDIR {: RESULT = a.intValue(); :}
+       | INTEIRO:a                  {: RESULT = a.intValue(); :}
+       ;
+
+/*
+Usar %prec:
+É importante quando um mesmo token tem dois significados diferentes (como o - unário e binário).
+Evita conflitos de precedência.
+Garante a construção correta da árvore sintática e a avaliação da expressão.
+
+=> Usar %prec MENOSUNARIO para informar:
+   "Essa regra tem a precedência do token MENOSUNARIO, 
+    que foi declarado separadamente na seção de precedência".
+*/
 ```
 
-7. Criar o arquivo `Main.java`:
+5. Criar o arquivo `Main.java`:
 - `touch Main.java`
 
-8. Informar o conteúdo do arquivo `Main.java`:
+6. Informar o conteúdo do arquivo `Main.java`:
 ```java
+import java.io.*;
 
 public class Main {
-    public static void main(String[] args) throws Exception {
-        Parser.main(args);
+  public static void main(String[] args) throws Exception {
+    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+    System.out.println("Digite expressões (termine com ';') e pressione ENTER. Ctrl+C para sair.");
+
+    while (true) {
+      System.out.print("> ");
+      
+      String linha = bufferedReader.readLine();
+
+      if (linha == null || linha.trim().isEmpty()) 
+        continue;
+
+      // Adicionar um \n no final para garantir que o analisador leia a linha completa:
+      StringReader stringReader = new StringReader(linha + "\n");
+
+      MeuParser meuParser = new MeuParser(new MeuScanner(stringReader));
+      
+      try {
+        meuParser.parse();
+      } catch (Exception e) {
+        System.err.println("Erro na expressão: " + e.getMessage());
+      }
     }
+  }
 }
-
 ```
 
-9. Criar um arquivo de script para compilação:
-- `touch rodar.sh`
+7. Dar permissão de execução para o arquivo de script `executar.sh` (torná-lo executável):
+- `chmod +x executar.sh`
 
-10. Informar o conteúdo do arquivo `compila.sh`:
-```bash
+8. Executar o `executar.sh`:
+- `./executar.sh`
 
-#!/bin/bash
+9. Informar expressões matemáticas do tipo: 
+- `1 + (2 - 7);` (é necessário terminar com ";")
 
-java -cp jflex.jar:jcup.jar jflex.Main exemplo.flex
-java -cp jcup.jar java_cup.Main -parser Parser -symbols sym exemplo.cup
-javac -cp jcup.jar *.java
+- `1 * 7;` (é necessário terminar com ";")
 
-echo "Digite uma expressão (ex: 1 + 2 + 3):"
-java -cp "jcup.jar:." Main
-
-```
-11. Dar permissão de execução para o arquivo de script. Executar:
-- `chmod +x rodar.sh`
-
-12. Testar a aplicação. Executar:
-- `./rodar.sh`
-
-21. Informe expressões como `1 + 2 + 3` para testar.
-
-
-O parser será gerado com o nome `Parser.java`, e os símbolos com `sym.java`.
-
-Exemplo de arquivo `sym.java` gerado:
-```java
-
-public class sym {
-  public static final int EOF = 0;
-  public static final int error = 1;
-  public static final int PLUS = 2;
-  public static final int NUM = 3;
-  // ... e outros se houverem.
-}
-
-```
+- ```
+  1 + (2
+  - 7);
+  ```
+  (é necessário terminar com ";")

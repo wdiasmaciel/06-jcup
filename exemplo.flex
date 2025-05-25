@@ -1,21 +1,39 @@
+/* Definição: seção para código do usuário. */
+
 import java_cup.runtime.Symbol;
 
 %%
 
-%public
+/* Opções e Declarações: seção para diretivas e macros. */
+
+// Diretivas:
+%cup
 %unicode
 %line
 %column
-%cup
 %class MeuScanner
 
-PLUS = \+
-NUM  = [0-9]+
+// Macros:
+digito = [0-9]
+inteiro = {digito}+
 
 %%
 
-{NUM}     { return new Symbol(sym.NUM, Integer.parseInt(yytext())); }
-{PLUS}    { return new Symbol(sym.PLUS); }
-\n        { /* ignora nova linha */ }
-[ \t\r]+  { /* ignora espaços */ }
-.         { System.err.println("Caractere inválido: " + yytext()); return null; }
+/* Regras e Ações Associadas: seção de instruções para o analisador léxico. */
+
+{inteiro} {
+            Integer numero = Integer.valueOf(yytext());
+            return new Symbol(sym.INTEIRO, yyline, yycolumn, numero);
+          }
+"+"       { return new Symbol(sym.MAIS); }
+"-"       { return new Symbol(sym.MENOS); }
+"("       { return new Symbol(sym.PARENTESQ); }
+")"       { return new Symbol(sym.PARENTDIR); }
+";"       { return new Symbol(sym.PTVIRG); }
+\n        { /* Ignora nova linha. */ }
+[ \t\r]+  { /* Ignora espaços. */ }
+.         { System.err.println("\n Caractere inválido: " + yytext() +
+                               "\n Linha: " + yyline +
+                               "\n Coluna: " + yycolumn + "\n"); 
+            return null; 
+          }
